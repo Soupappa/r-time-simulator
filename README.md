@@ -1,24 +1,42 @@
 # R-Time Simulator
 
-A pedagogical 3D simulation engine where **distance becomes visible time**.
+Un simulateur de physique relativiste interactif en 3D — 9 expériences, du temps retardé aux trous noirs avec lentille gravitationnelle.
 
-## Concept
+**Live** → [r-time-simulator.netlify.app](https://r-time-simulator.netlify.app) *(à mettre à jour avec ton URL Netlify)*
 
-In this world, the observer does not see objects in their current state — they see their **historical state**, determined by their distance from the camera.
+---
 
-### Central Formula
+## Les 9 simulations
 
-```
-visibleAge = distance × ageScale × (1 / R)
-visibleState = timeline.sample(visibleAge)
-```
+### V1 — Temps retardé conceptuel
+Le monde vu depuis l'observateur n'est pas le monde "maintenant" — chaque objet est visible dans l'état qu'il avait quand la lumière a quitté sa position. Plus un objet est loin, plus on le voit dans son passé. Le curseur **R** règle le rapport vitesse de propagation / vitesse d'évolution.
 
-- **When R is high** — the world looks coherent, nearly present.
-- **When R drops** — the farther an object, the deeper into its past you see it.
+### V2 — Position retardée (cône de lumière)
+Les objets en mouvement sont vus à leur position passée — là où ils étaient quand la lumière est partie. Un objet qui fonce vers toi semble plus proche qu'il n'est ; en s'éloignant, il semble plus loin. Premier aperçu de l'aberration de la lumière.
 
-`R` models the ratio of global propagation speed to internal transformation rate. Reducing R is like slowing down the effective speed of light.
+### V3 — Scène retardée complète
+Même moteur que V2, mais dans un environnement 3D riche (montagne, arbres, maisons, personnage, lune). Chaque objet a sa propre timeline d'états historiques ; distance × R détermine quel état est visible.
 
-> This is not real relativistic physics. It is a visual/conceptual model of temporal perception through distance.
+### V4 — Cinématique relativiste
+Ajout des effets cinématiques : l'observateur se déplace à une fraction de c. Les objets proches semblent presque présents ; les objets lointains se figent dans leur passé.
+
+### V5 — Aberration + Doppler
+À haute vitesse, les étoiles/objets se concentrent devant l'observateur (aberration de Bradley). Les objets approchants bleuissent (blueshift Doppler) ; ceux qui s'éloignent rougissent. Pilotable en vol libre.
+
+### V6 — Contraction de Lorentz + Doppler complet
+Implémentation complète de la relativité restreinte : contraction de Lorentz (les objets s'écrasent dans la direction du mouvement), aberration relativiste exacte, décalage Doppler de fréquence. Curseur vitesse de 0 à 0.99c.
+
+### V7 — Monde retardé immersif
+Environnement procédural avec sol de lave, cristaux lumineux et forêt. Les effets retardés sont appliqués à un monde vivant et animé — les cristaux pulsent dans leur passé, la lave coule à différentes époques selon la distance.
+
+### V8 — Trou noir de Schwarzschild
+Premier trou noir : disque d'accrétion avec effet Doppler orbital (côté qui s'approche bleuté, côté qui s'éloigne rouge), rougissement gravitationnel (redshift), anneau d'Einstein. Caméra libre autour du trou noir.
+
+### V9 — Lentille gravitationnelle géodésique *(flagship)*
+Ray marching per-pixel en GLSL sur les géodésiques de Schwarzschild. Chaque pixel trace la trajectoire d'un photon dans la métrique courbe. Résultats :
+- **Image secondaire** du disque (les photons qui contournent le trou noir côté opposé)
+- **Anneau de photons** (photons en orbite à r = 1.5 Rs)
+- **Vaisseau en chute libre** : se fige et se dilate en rougissant (dilatation temporelle + effet spaghetti) à mesure qu'il approche de l'horizon
 
 ---
 
@@ -29,101 +47,62 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
+Ouvre [http://localhost:5173](http://localhost:5173).
 
 ---
 
-## Scene Objects
+## Stack technique
 
-| Object | Distance | Timeline |
-|--------|----------|----------|
-| Cup | ~3 units | Raw clay → shaped → fired → painted → coffee |
-| Character | 4–50 units | Child → teenager → adult → elder → very old |
-| Tree | ~28 units | Seed → sprout → shrub → adult → ancient |
-| House | ~42 units | Empty terrain → foundations → structure → complete → inhabited |
-| Mountain | ~80 units | Proto-debris/magma → volcanoes → rocky → young → green |
-| Moon | ~140 units | Meteor swarm → proto-moon → reddish → current |
+| Technologie | Usage |
+|-------------|-------|
+| React + TypeScript | UI, navigation, état |
+| Three.js + React Three Fiber | Rendu 3D |
+| GLSL (ShaderMaterial) | Lentille gravitationnelle, Doppler, lava |
+| Vite | Build & dev server |
 
 ---
 
-## Controls
+## Architecture V9 (géodésiques)
 
-### Camera
-- **Orbit mode** — drag to rotate, scroll to zoom, right-drag to pan
-- **Cinematic demo** — camera automatically flies toward the mountain; watch objects shift through their timelines
-
-### UI Sliders
-- **R** (0.05 – 5.0) — propagation ratio; lower = stronger temporal distortion
-- **Age scale** — multiplier for age calculation
-- **Temporal labels** — show/hide floating info tags on objects
-- **Ghosting** — subtle transparency on very distant ancient objects
-
----
-
-## Video Export
-
-Click **Start recording** → interact with the scene → **Stop recording** → **Download WebM**.
-
-The recording uses the browser's native `canvas.captureStream()` + `MediaRecorder` API.
-
-**Convert to MP4 with ffmpeg:**
-```bash
-ffmpeg -i r-time-simulation.webm -c:v libx264 output.mp4
+```
+bgScene (Three.js) ──► WebGLRenderTarget
+                              │
+                    fullscreen quad (ShaderMaterial)
+                              │
+                    GLSL : ray marching Schwarzschild
+                    pour chaque pixel :
+                      - intègre la géodésique du photon
+                      - compte les traversées du plan du disque
+                      - 1ère traversée = image primaire
+                      - 2ème traversée = image secondaire
+                              │
+                           écran
 ```
 
-Future option: frame-by-frame export via ffmpeg.wasm for higher quality.
+Formule d'accélération géodésique :
+```
+a = -(3·Rs/2) · (h²/r⁵) · pos
+h = pos × vel  (moment angulaire conservé)
+```
 
 ---
 
-## Key Files
+## Contrôles (V6–V9)
+
+- **ZQSD / WASD** — déplacement
+- **Souris** — orientation (clic pour capturer)
+- **Curseur c** — vitesse (fraction de c)
+- **← Retour** — revenir au hub
+
+---
+
+## Structure du projet
 
 ```
 src/
-  App.tsx                    — canvas + overlay layout
-  store.ts                   — Zustand state (R, ageScale, labels, ghosting, camera mode)
-  temporal/
-    timeline.ts              — core formula: getVisibleAge(), sampleTimeline()
-    presets.ts               — all object timelines
-  objects/
-    Mountain.tsx             — low-poly mountain with 5 historical states
-    Moon.tsx                 — moon with 4 states from debris disk to current
-    Tree.tsx                 — tree with 5 growth states
-    House.tsx                — house with 5 construction states
-    Character.tsx            — walking figure with 5 age states
-    Cup.tsx                  — cup with 5 material states
-  components/
-    Scene.tsx                — Three.js scene, lighting, ground, camera modes
-    TemporalLabels.tsx       — HTML labels anchored to 3D positions
-    UIOverlay.tsx            — sliders, toggles, readout panel
-    RecorderControls.tsx     — WebM recording UI
-  utils/
-    recording.ts             — VideoRecorder class
-    distance.ts              — distanceFromCamera helper
+  pages/Landing.tsx     — hub de navigation bilingue (FR/EN)
+  v1/ … v9/             — une scène par version
+  components/           — contrôles FPS, overlay UI, labels
+  temporal/             — moteur de temps retardé (V1–V4)
+  objects/              — objets 3D avec timelines historiques
 ```
-
----
-
-## Limits of the Model
-
-- No actual Lorentz transformation or relativistic aberration
-- Timeline states are discrete morphs (opacity blending), not true geometric morphing
-- "Age units" are fictional — the scale is set for visual clarity, not physical accuracy
-- The character walks in a loop rather than traveling a fixed distance
-
----
-
-## Roadmap
-
-### V1
-- [ ] Smooth morph targets via Three.js `MorphTargetInfluences`
-- [ ] Import GLB/GLTF for each historical state
-- [ ] Export MP4 via ffmpeg.wasm
-- [ ] Atmospheric fog that increases with R drop
-
-### V2
-- [ ] "Temporal city" mode — urban landscape with buildings at various construction phases
-- [ ] "Human approach" focus mode — zoom on character timeline
-- [ ] Cinematic scripting system (keyframed camera + R animation)
-- [ ] High-quality frame-by-frame render export
-- [ ] Scene sharing via JSON snapshots
-- [ ] Audio — ghostly sounds for ancient states
