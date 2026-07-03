@@ -17,7 +17,7 @@
 
 import { useRef, useState, useEffect, useMemo, useCallback } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { PointerLockControls, Environment } from '@react-three/drei'
+import { PointerLockControls } from '@react-three/drei'
 import { EffectComposer, Bloom, ToneMapping, Vignette } from '@react-three/postprocessing'
 import { ToneMappingMode } from 'postprocessing'
 import * as THREE from 'three'
@@ -853,9 +853,6 @@ export function V7Scene({ onBack }: { onBack: () => void }) {
         dpr={[1, 1.5]}>
         <color attach="background" args={['#0a0c14']} />
         <fog attach="fog" args={['#0e1020', 250, 950]} />
-
-        {/* Éclairage ambiant IBL — preset "night" pour reflets sur cristaux et lave */}
-        <Environment preset="night" />
 
         <hemisphereLight args={['#2a3866', '#5a2a10', 0.8]} />
         <ambientLight intensity={0.4} color="#cc8844" />
