@@ -18,8 +18,6 @@
 import { useRef, useState, useEffect, useMemo, useCallback } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { PointerLockControls } from '@react-three/drei'
-import { EffectComposer, Bloom, ToneMapping, Vignette } from '@react-three/postprocessing'
-import { ToneMappingMode } from 'postprocessing'
 import * as THREE from 'three'
 import { ScenePanel } from '../components/ScenePanel'
 
@@ -849,14 +847,15 @@ export function V7Scene({ onBack }: { onBack: () => void }) {
   return (
     <div ref={containerRef} style={{ width: '100vw', height: '100vh', background: '#0a0a12', position: 'relative' }}>
       <Canvas camera={{ position: START.toArray(), fov: 70, near: 0.1, far: 1600 }}
-        gl={{ antialias: true, preserveDrawingBuffer: true, toneMapping: THREE.NoToneMapping }} shadows
+        gl={{ antialias: true, preserveDrawingBuffer: true,
+              toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.15 }} shadows
         dpr={[1, 1.5]}>
         <color attach="background" args={['#0a0c14']} />
         <fog attach="fog" args={['#0e1020', 250, 950]} />
 
-        <hemisphereLight args={['#2a3866', '#5a2a10', 0.8]} />
-        <ambientLight intensity={0.4} color="#cc8844" />
-        <directionalLight position={[80, 120, 60]} intensity={1.4} color="#ffe8c0"
+        <hemisphereLight args={['#3a4a80', '#6a3a18', 1.1]} />
+        <ambientLight intensity={0.8} color="#ffcc88" />
+        <directionalLight position={[80, 120, 60]} intensity={1.9} color="#ffe8c0"
           castShadow shadow-mapSize={[2048, 2048]}
           shadow-camera-far={700} shadow-camera-left={-300} shadow-camera-right={300}
           shadow-camera-top={300} shadow-camera-bottom={-20} />
@@ -869,18 +868,6 @@ export function V7Scene({ onBack }: { onBack: () => void }) {
           betaRef={betaRef} phaseRef={phaseRef} zoneRef={zoneRef}
           sprintRef={sprintRef} moonRef={moonRef} resetRef={resetRef} />
         <PointerLockControls onLock={onLock} onUnlock={onUnlock} />
-
-        {/* Post-processing : bloom cinématique + tone mapping ACES + vignette */}
-        <EffectComposer>
-          <Bloom
-            intensity={1.4}
-            luminanceThreshold={0.6}
-            luminanceSmoothing={0.4}
-            mipmapBlur
-          />
-          <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-          <Vignette eskil={false} offset={0.3} darkness={0.6} />
-        </EffectComposer>
       </Canvas>
       <HUD cSim={cSim} setCSim={setCSim} onBack={onBack} locked={locked}
         containerRef={containerRef as React.RefObject<HTMLDivElement | null>}
