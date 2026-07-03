@@ -17,7 +17,9 @@
 
 import { useRef, useState, useEffect, useMemo, useCallback } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { PointerLockControls } from '@react-three/drei'
+import { PointerLockControls, Environment } from '@react-three/drei'
+import { EffectComposer, Bloom, ToneMapping, Vignette } from '@react-three/postprocessing'
+import { ToneMappingMode } from 'postprocessing'
 import * as THREE from 'three'
 import { ScenePanel } from '../components/ScenePanel'
 
@@ -228,7 +230,7 @@ function TerrainEnv() {
         </mesh>
         <mesh position={[0, 19, 0]} rotation={[-Math.PI / 2, 0, 0]} name="lava-pool">
           <circleGeometry args={[3.2, 14]} />
-          <meshStandardMaterial color="#ff4400" emissive="#ff3300" emissiveIntensity={4} roughness={0.25} />
+          <meshStandardMaterial color="#ff4400" emissive="#ff3300" emissiveIntensity={8} roughness={0.25} toneMapped={false} />
         </mesh>
       </group>
     </group>
@@ -236,20 +238,51 @@ function TerrainEnv() {
 }
 
 function Sky() {
-  const geo = useMemo(() => {
-    const n = 1800, pos = new Float32Array(n * 3)
+  // Couche 1 — étoiles lointaines froides
+  const geoFar = useMemo(() => {
+    const n = 3000, pos = new Float32Array(n * 3), col = new Float32Array(n * 3)
+    const palette = [
+      [0.85, 0.90, 1.00], [1.00, 0.92, 0.80], [0.80, 0.85, 1.00],
+      [1.00, 0.70, 0.55], [0.70, 0.80, 1.00],
+    ]
     for (let i = 0; i < n; i++) {
-      const r = 700 + Math.random() * 500
+      const r = 900 + Math.random() * 400
       const th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1)
       pos[i*3]   = r * Math.sin(ph) * Math.cos(th)
-      pos[i*3+1] = Math.abs(r * Math.sin(ph) * Math.sin(th)) + 30
-      pos[i*3+2] = r * Math.cos(ph)
+      pos[i*3+1] = Math.abs(r * Math.cos(ph)) + 20
+      pos[i*3+2] = r * Math.sin(ph) * Math.sin(th)
+      const c = palette[Math.floor(Math.random() * palette.length)]
+      col[i*3] = c[0]; col[i*3+1] = c[1]; col[i*3+2] = c[2]
     }
     const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3))
+    g.setAttribute('color',    new THREE.BufferAttribute(col, 3))
     return g
   }, [])
-  return <points geometry={geo}><pointsMaterial color="#d0e0ff" size={1.0} sizeAttenuation transparent opacity={0.55} /></points>
+
+  // Couche 2 — quelques étoiles brillantes (bloom les fera luire)
+  const geoBright = useMemo(() => {
+    const n = 80, pos = new Float32Array(n * 3)
+    for (let i = 0; i < n; i++) {
+      const r = 850 + Math.random() * 200
+      const th = Math.random() * Math.PI * 2, ph = Math.acos(2 * Math.random() - 1)
+      pos[i*3]   = r * Math.sin(ph) * Math.cos(th)
+      pos[i*3+1] = Math.abs(r * Math.cos(ph)) + 40
+      pos[i*3+2] = r * Math.sin(ph) * Math.sin(th)
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); return g
+  }, [])
+
+  return (
+    <group>
+      <points geometry={geoFar}>
+        <pointsMaterial vertexColors size={0.9} sizeAttenuation transparent opacity={0.75} />
+      </points>
+      <points geometry={geoBright}>
+        <pointsMaterial color="#ffffff" size={2.2} sizeAttenuation transparent opacity={0.95} />
+      </points>
+    </group>
+  )
 }
 
 // ─── Simulation ───────────────────────────────────────────────────────────────
@@ -301,8 +334,12 @@ function Simulation({ cSim, locked, betaRef, phaseRef, zoneRef, sprintRef, moonR
     // ── Lave ──────────────────────────────────────────────────────────────
     for (const l of lavas.current) {
       const m = new THREE.Mesh(
-        new THREE.SphereGeometry(1.6, 8, 6),
-        new THREE.MeshStandardMaterial({ color: '#ff5500', emissive: '#ff2200', emissiveIntensity: 3, roughness: 0.4, flatShading: true }),
+        new THREE.SphereGeometry(1.6, 10, 8),
+        new THREE.MeshStandardMaterial({
+          color: '#ff4400', emissive: '#ff3300', emissiveIntensity: 6,
+          roughness: 0.55, metalness: 0.0, flatShading: false,
+          toneMapped: false,  // les emissives sortent du range HDR → bloom
+        }),
       )
       m.visible = false; scene.add(m); l.mesh = m
     }
@@ -311,7 +348,11 @@ function Simulation({ cSim, locked, betaRef, phaseRef, zoneRef, sprintRef, moonR
     for (const cr of crystals.current) {
       const m = new THREE.Mesh(
         new THREE.ConeGeometry(0.08, 1, 6),
-        new THREE.MeshStandardMaterial({ color: '#1e44cc', emissive: '#0a1e88', emissiveIntensity: 1.8, roughness: 0.10, metalness: 0.85, flatShading: true }),
+        new THREE.MeshStandardMaterial({
+          color: '#3366ff', emissive: '#1133cc', emissiveIntensity: 3.5,
+          roughness: 0.04, metalness: 0.92, flatShading: true,
+          toneMapped: false,
+        }),
       )
       m.visible = false; scene.add(m); cr.mesh = m
     }
@@ -806,20 +847,24 @@ export function V7Scene({ onBack }: { onBack: () => void }) {
   const onUnlock     = useCallback(() => setLocked(false), [])
 
   return (
-    <div ref={containerRef} style={{ width: '100vw', height: '100vh', background: '#16192a', position: 'relative' }}>
+    <div ref={containerRef} style={{ width: '100vw', height: '100vh', background: '#0a0a12', position: 'relative' }}>
       <Canvas camera={{ position: START.toArray(), fov: 70, near: 0.1, far: 1600 }}
-        gl={{ antialias: true, preserveDrawingBuffer: true }} shadows>
-        <color attach="background" args={['#16192a']} />
-        <fog attach="fog" args={['#1e2235', 220, 900]} />
+        gl={{ antialias: true, preserveDrawingBuffer: true, toneMapping: THREE.NoToneMapping }} shadows
+        dpr={[1, 1.5]}>
+        <color attach="background" args={['#0a0c14']} />
+        <fog attach="fog" args={['#0e1020', 250, 950]} />
 
-        <hemisphereLight args={['#4466aa', '#7a4822', 1.1]} />
-        <ambientLight intensity={0.9} color="#ffcc88" />
-        <directionalLight position={[80, 120, 60]} intensity={1.8} color="#fff4e0"
-          castShadow shadow-mapSize={[1024, 1024]}
+        {/* Éclairage ambiant IBL — preset "night" pour reflets sur cristaux et lave */}
+        <Environment preset="night" />
+
+        <hemisphereLight args={['#2a3866', '#5a2a10', 0.8]} />
+        <ambientLight intensity={0.4} color="#cc8844" />
+        <directionalLight position={[80, 120, 60]} intensity={1.4} color="#ffe8c0"
+          castShadow shadow-mapSize={[2048, 2048]}
           shadow-camera-far={700} shadow-camera-left={-300} shadow-camera-right={300}
           shadow-camera-top={300} shadow-camera-bottom={-20} />
-        <pointLight position={[CRYST_CENTER.x, 40, CRYST_CENTER.z]} intensity={18} color="#2244ee" distance={150} decay={1.4} />
-        <pointLight position={[TREE_CENTER.x, 25, TREE_CENTER.z]}   intensity={10} color="#336622" distance={120} decay={1.4} />
+        <pointLight position={[CRYST_CENTER.x, 40, CRYST_CENTER.z]} intensity={30} color="#2244ee" distance={160} decay={1.6} />
+        <pointLight position={[TREE_CENTER.x, 25, TREE_CENTER.z]}   intensity={14} color="#336622" distance={130} decay={1.4} />
 
         <Sky />
         <TerrainEnv />
@@ -827,6 +872,18 @@ export function V7Scene({ onBack }: { onBack: () => void }) {
           betaRef={betaRef} phaseRef={phaseRef} zoneRef={zoneRef}
           sprintRef={sprintRef} moonRef={moonRef} resetRef={resetRef} />
         <PointerLockControls onLock={onLock} onUnlock={onUnlock} />
+
+        {/* Post-processing : bloom cinématique + tone mapping ACES + vignette */}
+        <EffectComposer>
+          <Bloom
+            intensity={1.4}
+            luminanceThreshold={0.6}
+            luminanceSmoothing={0.4}
+            mipmapBlur
+          />
+          <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+          <Vignette eskil={false} offset={0.3} darkness={0.6} />
+        </EffectComposer>
       </Canvas>
       <HUD cSim={cSim} setCSim={setCSim} onBack={onBack} locked={locked}
         containerRef={containerRef as React.RefObject<HTMLDivElement | null>}
