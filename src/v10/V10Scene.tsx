@@ -43,6 +43,13 @@ const FRAG = /* glsl */`
   uniform vec3  uVel;     // direction unité de la vitesse (monde)
   uniform float uBeta;
   uniform float uGamma;
+  uniform float uVisor;    // 0 = brut · 1 = visière polarisante
+  uniform float uExposure; // exposition sous visière
+
+  // Tone mapping ACES (filmic) — compresse les hauts, révèle la couleur du brûlage
+  vec3 aces(vec3 x) {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
+  }
 
   vec3 dopplerTint(vec3 c, float D) {
     if (D >= 1.0) return mix(c, vec3(0.60, 0.78, 1.00), clamp((D - 1.0) / 2.0, 0.0, 1.0) * 0.85);
@@ -87,6 +94,12 @@ const FRAG = /* glsl */`
     col = dopplerTint(col, D);
     col *= clamp(pow(D, 2.5), 0.12, 5.0);
 
+    // Visière polarisante : dompte l'éblouissement du point avant, révèle sa structure
+    if (uVisor > 0.5) {
+      col = aces(col * uExposure);
+      col = mix(col, col * vec3(0.92, 0.97, 1.06), 0.5);  // teinte polarisante froide
+    }
+
     gl_FragColor = vec4(col, 1.0);
   }
 `
@@ -127,7 +140,7 @@ const _vel3 = new THREE.Vector3()
 
 // ─── World ────────────────────────────────────────────────────────────────────
 interface WorldProps {
-  cSim: number; locked: boolean
+  cSim: number; locked: boolean; visor: boolean; exposure: number
   betaRef:   React.RefObject<HTMLSpanElement | null>
   fcRef:     React.RefObject<HTMLSpanElement | null>
   dopRef:    React.RefObject<HTMLSpanElement | null>
@@ -135,10 +148,12 @@ interface WorldProps {
   resetRef:  React.MutableRefObject<(() => void) | null>
 }
 
-function World({ cSim, locked, betaRef, fcRef, dopRef, sprintRef, resetRef }: WorldProps) {
+function World({ cSim, locked, visor, exposure, betaRef, fcRef, dopRef, sprintRef, resetRef }: WorldProps) {
   const { gl, camera, size } = useThree()
-  const cRef     = useRef(cSim); cRef.current = cSim
-  const locRef   = useRef(locked); locRef.current = locked
+  const cRef      = useRef(cSim); cRef.current = cSim
+  const locRef    = useRef(locked); locRef.current = locked
+  const visorRef  = useRef(visor); visorRef.current = visor
+  const expRef    = useRef(exposure); expRef.current = exposure
   const keys     = useRef<Set<string>>(new Set())
   const velRef   = useRef(new THREE.Vector3(0, 0, -1))
   const betaLive = useRef(0)
@@ -173,6 +188,8 @@ function World({ cSim, locked, betaRef, fcRef, dopRef, sprintRef, resetRef }: Wo
         uVel:        { value: new THREE.Vector3(0, 0, -1) },
         uBeta:       { value: 0 },
         uGamma:      { value: 1 },
+        uVisor:      { value: 0 },
+        uExposure:   { value: 0.5 },
       },
       vertexShader: VERT, fragmentShader: FRAG, depthTest: false, depthWrite: false,
     })
@@ -323,6 +340,8 @@ function World({ cSim, locked, betaRef, fcRef, dopRef, sprintRef, resetRef }: Wo
     u.uVel.value.copy(_vel3)
     u.uBeta.value = b
     u.uGamma.value = g
+    u.uVisor.value = visorRef.current ? 1 : 0
+    u.uExposure.value = expRef.current
 
     // 3. HUD
     if (betaRef.current) betaRef.current.textContent = `β ${b.toFixed(3)}  γ ${g.toFixed(2)}`
@@ -352,10 +371,13 @@ function World({ cSim, locked, betaRef, fcRef, dopRef, sprintRef, resetRef }: Wo
 
 // ─── HUD ──────────────────────────────────────────────────────────────────────
 function HUD({ cSim, setCSim, onBack, locked, containerRef,
+               visor, setVisor, exposure, setExposure,
                betaRef, fcRef, dopRef, sprintRef, resetRef }: {
   cSim: number; setCSim: (v: number) => void
   onBack: () => void; locked: boolean
   containerRef: React.RefObject<HTMLDivElement | null>
+  visor: boolean; setVisor: (v: boolean) => void
+  exposure: number; setExposure: (v: number) => void
   betaRef:   React.RefObject<HTMLSpanElement | null>
   fcRef:     React.RefObject<HTMLSpanElement | null>
   dopRef:    React.RefObject<HTMLSpanElement | null>
@@ -403,6 +425,29 @@ function HUD({ cSim, setCSim, onBack, locked, containerRef,
           <div style={{ marginTop:4, color:'#445566' }}>Vue "photographiée" (aberration) — l'opposé de V7 (vue référentiel).</div>
         </div>
 
+        {/* Visière polarisante */}
+        <div style={{ background: visor ? 'rgba(30,60,110,0.35)' : 'rgba(0,0,0,0.25)', border: `1px solid ${visor ? 'rgba(90,150,230,0.5)' : 'rgba(60,80,120,0.25)'}`, borderRadius:8, padding:'10px 13px', marginBottom:10, transition:'all 0.2s' }}>
+          <button onClick={() => setVisor(!visor)}
+            style={{ width:'100%', display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', background:'transparent', border:'none', color: visor ? '#aaddff' : '#667799', fontFamily:'inherit', fontSize:13, fontWeight:600, padding:0 }}>
+            <span>🕶 Visière polarisante</span>
+            <span style={{ color: visor ? '#66ccff' : '#445566' }}>{visor ? 'ON' : 'OFF'}</span>
+          </button>
+          {visor && (
+            <div style={{ marginTop:10 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, marginBottom:4 }}>
+                <span style={{ color:'#556688' }}>exposition</span>
+                <span style={{ color:'#88ccff' }}>{exposure.toFixed(2)}</span>
+              </div>
+              <input type="range" min={0.1} max={1.2} step={0.05} value={exposure}
+                onChange={e => setExposure(parseFloat(e.target.value))}
+                style={{ width:'100%', accentColor:'#4488cc', cursor:'pointer' }} />
+              <div style={{ fontSize:11, color:'#445566', marginTop:5, lineHeight:1.6 }}>
+                Tone mapping ACES : dompte le brûlage avant et révèle sa structure colorée.
+              </div>
+            </div>
+          )}
+        </div>
+
         <div style={{ background:'rgba(0,0,0,0.25)', borderRadius:8, padding:'9px 13px', marginBottom:10, fontSize:12, color:'#334455', lineHeight:1.9 }}>
           <div style={{ fontSize:11, color:'#445566', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:4 }}>Contrôles</div>
           <div><span style={{ color:'#6699bb' }}>WASD</span> · <span style={{ color:'#ffee44' }}>Shift</span> ×{SPRINT_MUL} · <span style={{ color:'#66bb66' }}>Espace/Ctrl</span> ↑↓</div>
@@ -443,8 +488,10 @@ function HUD({ cSim, setCSim, onBack, locked, containerRef,
 
 // ─── Export ───────────────────────────────────────────────────────────────────
 export function V10Scene({ onBack }: { onBack: () => void }) {
-  const [cSim, setCSim]     = useState(28)
-  const [locked, setLocked] = useState(false)
+  const [cSim, setCSim]         = useState(28)
+  const [locked, setLocked]     = useState(false)
+  const [visor, setVisor]       = useState(false)
+  const [exposure, setExposure] = useState(0.5)
   const containerRef = useRef<HTMLDivElement>(null)
   const betaRef      = useRef<HTMLSpanElement>(null)
   const fcRef        = useRef<HTMLSpanElement>(null)
@@ -463,7 +510,7 @@ export function V10Scene({ onBack }: { onBack: () => void }) {
       >
         <color attach="background" args={['#05060f']} />
         <World
-          cSim={cSim} locked={locked}
+          cSim={cSim} locked={locked} visor={visor} exposure={exposure}
           betaRef={betaRef} fcRef={fcRef} dopRef={dopRef}
           sprintRef={sprintRef} resetRef={resetRef}
         />
@@ -471,6 +518,7 @@ export function V10Scene({ onBack }: { onBack: () => void }) {
       </Canvas>
       <HUD cSim={cSim} setCSim={setCSim} onBack={onBack} locked={locked}
         containerRef={containerRef as React.RefObject<HTMLDivElement | null>}
+        visor={visor} setVisor={setVisor} exposure={exposure} setExposure={setExposure}
         betaRef={betaRef} fcRef={fcRef} dopRef={dopRef}
         sprintRef={sprintRef} resetRef={resetRef} />
     </div>
