@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-type Page = 'landing' | 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'v7' | 'v8' | 'v9'
+type Page = 'landing' | 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'v7' | 'v8' | 'v9' | 'v10'
 type Lang = 'en' | 'fr'
 
 // ─── Animated particle background ─────────────────────────────────────────────
@@ -74,6 +74,18 @@ const UI = {
 }
 
 const CARDS: CardDef[] = [
+  {
+    version: 'V10 · 2026', title: 'Aberration Drive', subtitle: 'cos θ_lab = (cos θ_obs − β) / (1 − β cos θ_obs)',
+    badge: 'New', badgeColor: '120,180,255', nav: 'v10',
+    en: {
+      description: 'The photographed view of special relativity. The world is rendered into a cubemap, then a per-pixel shader applies inverse relativistic aberration: the forward view compresses into a wide-angle, objects ahead shrink, blueshift and brighten (headlight effect). The opposite of V7 — what an eye would actually see near light speed.',
+      features: ['Real-time relativistic aberration via cubemap sampling', 'Forward view compresses to wide-angle — objects ahead shrink', 'Doppler: blue ahead, red behind', 'Relativistic beaming — forward brightens ∝ D^2.5', 'Speed-driven β — sprint to crank the effect'],
+    },
+    fr: {
+      description: "La vue photographiée de la relativité restreinte. Le monde est rendu dans une cubemap, puis un shader applique l'aberration relativiste inverse par pixel : le champ avant se comprime en grand-angle, les objets rapetissent, bleuissent et s'illuminent (effet phare). L'opposé de V7 — ce qu'un œil verrait vraiment près de la vitesse de la lumière.",
+      features: ["Aberration relativiste temps réel par échantillonnage cubemap", "L'avant se comprime en grand-angle — les objets rapetissent", "Doppler : bleu devant, rouge derrière", "Beaming relativiste — l'avant s'illumine ∝ D^2.5", "β piloté par la vitesse — sprinte pour amplifier l'effet"],
+    },
+  },
   {
     version: 'V9 · 2026', title: 'Geodesic Lensing', subtitle: 'a = −(3Rs/2)(h²/r⁵) · pos',
     badge: 'Photon Ring', badgeColor: '255,200,80', nav: 'v9',

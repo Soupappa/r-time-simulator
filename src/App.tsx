@@ -9,8 +9,9 @@ import { V6Scene } from './v6/V6Scene'
 import { V7Scene } from './v7/V7Scene'
 import { V8Scene } from './v8/V8Scene'
 import { V9Scene } from './v9/V9Scene'
+import { V10Scene } from './v10/V10Scene'
 
-type Page = 'landing' | 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'v7' | 'v8' | 'v9'
+type Page = 'landing' | 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'v7' | 'v8' | 'v9' | 'v10'
 
 export default function App() {
   const [page, setPage] = useState<Page>('landing')
@@ -24,5 +25,6 @@ export default function App() {
   if (page === 'v7') return <V7Scene onBack={() => setPage('landing')} />
   if (page === 'v8') return <V8Scene onBack={() => setPage('landing')} />
   if (page === 'v9') return <V9Scene onBack={() => setPage('landing')} />
+  if (page === 'v10') return <V10Scene onBack={() => setPage('landing')} />
   return <Landing onNavigate={setPage} />
 }
