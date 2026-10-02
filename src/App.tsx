@@ -10,21 +10,32 @@ import { V7Scene } from './v7/V7Scene'
 import { V8Scene } from './v8/V8Scene'
 import { V9Scene } from './v9/V9Scene'
 import { V10Scene } from './v10/V10Scene'
+import { V11Scene } from './v11/V11Scene'
+import { LabBaamLink } from './components/LabBaamLink'
 
-type Page = 'landing' | 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'v7' | 'v8' | 'v9' | 'v10'
+type Page = 'landing' | 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'v7' | 'v8' | 'v9' | 'v10' | 'v11'
 
 export default function App() {
   const [page, setPage] = useState<Page>('landing')
+  const onBack = () => setPage('landing')
 
-  if (page === 'v1') return <V1Page  onBack={() => setPage('landing')} />
-  if (page === 'v2') return <V2Scene onBack={() => setPage('landing')} />
-  if (page === 'v3') return <V3Scene onBack={() => setPage('landing')} />
-  if (page === 'v4') return <V4Scene onBack={() => setPage('landing')} />
-  if (page === 'v5') return <V5Scene onBack={() => setPage('landing')} />
-  if (page === 'v6') return <V6Scene onBack={() => setPage('landing')} />
-  if (page === 'v7') return <V7Scene onBack={() => setPage('landing')} />
-  if (page === 'v8') return <V8Scene onBack={() => setPage('landing')} />
-  if (page === 'v9') return <V9Scene onBack={() => setPage('landing')} />
-  if (page === 'v10') return <V10Scene onBack={() => setPage('landing')} />
-  return <Landing onNavigate={setPage} />
+  const content = page === 'v1' ? <V1Page onBack={onBack} />
+    : page === 'v2' ? <V2Scene onBack={onBack} />
+    : page === 'v3' ? <V3Scene onBack={onBack} />
+    : page === 'v4' ? <V4Scene onBack={onBack} />
+    : page === 'v5' ? <V5Scene onBack={onBack} />
+    : page === 'v6' ? <V6Scene onBack={onBack} />
+    : page === 'v7' ? <V7Scene onBack={onBack} />
+    : page === 'v8' ? <V8Scene onBack={onBack} />
+    : page === 'v9' ? <V9Scene onBack={onBack} />
+    : page === 'v10' ? <V10Scene onBack={onBack} />
+    : page === 'v11' ? <V11Scene onBack={onBack} />
+    : <Landing onNavigate={setPage} />
+
+  return (
+    <>
+      <LabBaamLink />
+      {content}
+    </>
+  )
 }

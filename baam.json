@@ -1,0 +1,20 @@
+{
+  "$schema": "https://baam.pro/schema/manifest-v1.json",
+  "schemaVersion": 1,
+  "id": "r-time",
+  "title": "R-Time",
+  "summary": "Un laboratoire de physique relativiste interactif, du temps retardé aux géodésiques de Schwarzschild.",
+  "type": "simulation-interactive",
+  "status": "public",
+  "territories": ["lab"],
+  "url": "https://r-time.lab.baam.pro/",
+  "localUrl": "http://127.0.0.1:5173/",
+  "repository": "https://github.com/Soupappa/r-time-simulator",
+  "updatedAt": "2026-10-02",
+  "tags": ["relativité", "temps", "simulation", "three.js", "glsl"],
+  "preview": {
+    "type": "iframe",
+    "url": "https://r-time.lab.baam.pro/"
+  },
+  "relations": []
+}

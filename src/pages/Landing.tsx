@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-type Page = 'landing' | 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'v7' | 'v8' | 'v9' | 'v10'
+type Page = 'landing' | 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6' | 'v7' | 'v8' | 'v9' | 'v10' | 'v11'
 type Lang = 'en' | 'fr'
 
 // ─── Animated particle background ─────────────────────────────────────────────
@@ -74,6 +74,18 @@ const UI = {
 }
 
 const CARDS: CardDef[] = [
+  {
+    version: 'V11 - 2026', title: 'Light Cone Drive', subtitle: 't_emit = t_now - distance / c_effective',
+    badge: 'Shader', badgeColor: '90,190,255', nav: 'v11',
+    en: {
+      description: 'A shader-first R-low laboratory. Each pixel casts a ray into an analytic world, finds the visible event, then samples object color and emission at the photon emission time. Low R makes wavefronts, time lag, Doppler and beaming visible as one photographed image.',
+      features: ['Per-pixel event sampling in a fullscreen GLSL shader', 'R maps to c_effective, then beta/gamma/Doppler', 'Light-cone bands reveal delayed wavefronts', 'Analytic beacons pulse at t_emit, not t_now', 'First-person flight with live physical readout'],
+    },
+    fr: {
+      description: "Un laboratoire R-bas pense shader d'abord. Chaque pixel lance un rayon dans un monde analytique, trouve l'evenement visible, puis echantillonne la couleur et l'emission au temps ou le photon est parti. R bas rend visibles les fronts d'onde, le retard, le Doppler et l'effet phare dans une seule image photographiee.",
+      features: ['Echantillonnage evenementiel par pixel en GLSL plein ecran', 'R produit c_effective, puis beta/gamma/Doppler', 'Bandes de cone lumineux pour lire les fronts retardes', 'Balises analytiques pulsees a t_emit, pas t_now', 'Vol libre avec lecture physique en temps reel'],
+    },
+  },
   {
     version: 'V10 · 2026', title: 'Aberration Drive', subtitle: 'cos θ_lab = (cos θ_obs − β) / (1 − β cos θ_obs)',
     badge: 'New', badgeColor: '120,180,255', nav: 'v10',

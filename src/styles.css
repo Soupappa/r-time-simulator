@@ -35,6 +35,43 @@ canvas {
   display: block;
 }
 
+.lab-baam-link {
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  border: 1px solid rgba(107, 140, 255, 0.5);
+  border-radius: 999px;
+  background: rgba(6, 8, 16, 0.82);
+  color: #8aa2ff;
+  font: 600 10px/1 var(--font);
+  letter-spacing: 0.18em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transform: translateX(-50%);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 18px rgba(107, 140, 255, 0.15);
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.lab-baam-link:hover {
+  border-color: #8aa2ff;
+  background: #6b8cff;
+  color: #060810;
+  box-shadow: 0 0 24px rgba(107, 140, 255, 0.45);
+}
+
+.lab-baam-link svg {
+  width: 24px;
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1;
+}
+
 .ui-overlay {
   position: fixed;
   top: 0;
